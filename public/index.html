@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HMS · AI Healthcare</title><link rel="stylesheet" href="style.css" /></head>
+<body>
+<!-- ===================== AUTH ===================== -->
+<div id="authScreen" class="auth-wrap">
+  <div class="auth-hero">
+    <div class="logo">🏥</div>
+    <h1>HMS <span>AI Healthcare</span></h1>
+    <p>Hospital management with an AI-assisted symptom checker — register, check symptoms, and book the right doctor.</p>
+    <ul class="hero-points"><li>🧾 Simple patient registration</li><li>🩺 Instant symptom triage &amp; guidance</li><li>📅 Easy doctor appointments</li><li>📄 Downloadable health report</li></ul>
+    <small>AI gives informational guidance only — not a medical diagnosis.</small>
+  </div>
+  <div class="auth-panel"><div class="card auth-card">
+    <h2>Welcome 👋</h2>
+    <p class="subtitle">Login or create a patient account</p>
+    <div class="tab-toggle">
+      <button id="loginTabBtn" class="active" onclick="showAuthTab('login')">Login</button>
+      <button id="registerTabBtn" onclick="showAuthTab('register')">New Patient</button>
+    </div>
+    <form id="loginForm">
+      <label>Email</label><input type="email" id="loginEmail" required placeholder="you@gmail.com" autocomplete="email" />
+      <label>Password</label><div class="password-field"><input type="password" id="loginPassword" required placeholder="••••••••" /><button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" onclick="togglePassword('loginPassword', this)">👁</button></div>
+      <button type="submit" class="btn" style="width:100%">Login</button>
+      <div id="loginError" class="error-msg"></div>
+    </form>
+    <form id="registerForm" class="hidden">
+      <label>Full Name</label><input type="text" id="regName" required />
+      <label>Email</label><input type="email" id="regEmail" required placeholder="you@gmail.com" autocomplete="email" />
+      <label>Password</label><div class="password-field"><input type="password" id="regPassword" required minlength="4" /><button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" onclick="togglePassword('regPassword', this)">👁</button></div>
+      <p class="muted">Next you will fill your patient registration details.</p>
+      <button type="submit" class="btn" style="width:100%">Create Account</button>
+      <div id="registerError" class="error-msg"></div><div id="registerSuccess" class="success-msg"></div>
+    </form>
+    <label style="margin-top:20px">Demo logins (click to fill)</label>
+    <div class="demo-row">
+      <button type="button" onclick="fillDemo('patient@gmail.com','patient123')">Patient</button>
+      <button type="button" onclick="fillDemo('ananya@gmail.com','doctor123')">Doctor</button>
+      <button type="button" onclick="fillDemo('admin@gmail.com','admin123')">Admin</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div id="appScreen" class="hidden">
+  <div class="navbar">
+    <div class="brand">🏥 HMS<small>AI Healthcare</small></div>
+    <div class="user-info">
+      <div class="avatar" id="navAvatar"></div>
+      <div class="who"><b id="navUserName"></b><span class="role-pill" id="navRole"></span></div>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+  <div class="container">
+
+    <!-- ---------- ADMIN DASHBOARD ---------- -->
+    <div id="adminView" class="hidden">
+      <div class="tabs">
+        <button class="active" onclick="showAdminTab('overview')" data-tab="overview">Overview</button>
+        <button onclick="showAdminTab('doctors')" data-tab="doctors">Doctors</button>
+        <button onclick="showAdminTab('departments')" data-tab="departments">Departments</button>
+        <button onclick="showAdminTab('appointments')" data-tab="appointments">All Appointments</button>
+      </div>
+
+      <div id="adminOverviewTab">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Appointments by Department</h3>
+            <div id="byDeptList"></div>
+          </div>
+          <div class="card">
+            <h3>Appointments by Status</h3>
+            <div id="byStatusList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="adminDoctorsTab" class="hidden">
+        <div class="card">
+          <h3>Add New Doctor</h3>
+          <form id="addDoctorForm">
+            <div class="grid-2">
+              <div><label>Name</label><input type="text" id="docName" required /></div>
+              <div><label>Email</label><input type="email" id="docEmail" required placeholder="doctor@gmail.com" autocomplete="email" /></div>
+              <div><label>Password</label><div class="password-field"><input type="password" id="docPassword" required /><button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" onclick="togglePassword('docPassword', this)">👁</button></div></div>
+              <div><label>Department</label><select id="docDept" required></select></div>
+              <div><label>Specialization (type)</label><input type="text" id="docSpec" placeholder="e.g. Cardiologist" /></div>
+              <div><label>Qualification</label><input type="text" id="docQual" placeholder="e.g. MBBS, MD (Cardiology)" /></div>
+              <div><label>Experience (years)</label><input type="number" id="docExp" /></div>
+              <div><label>Consultation Fee (₹)</label><input type="number" id="docFee" value="300" /></div>
+            </div>
+            <button type="submit" class="btn">Add Doctor</button>
+            <div id="addDoctorMsg"></div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>All Doctors</h3>
+          <table id="doctorsTable">
+            <thead><tr><th>Name</th><th>Department</th><th>Specialization</th><th>Qualification</th><th>Experience</th><th>Fee</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="adminDeptTab" class="hidden">
+        <div class="card">
+          <h3>Add Department</h3>
+          <form id="addDeptForm" style="display:flex; gap:10px; align-items:flex-end;">
+            <div style="flex:1;"><label>Department Name</label><input type="text" id="deptName" required /></div>
+            <button type="submit" class="btn" style="margin-top:0;">Add</button>
+          </form>
+          <div id="addDeptMsg"></div>
+        </div>
+        <div class="card">
+          <h3>All Departments</h3>
+          <table id="deptTable"><thead><tr><th>Name</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+
+      <div id="adminApptTab" class="hidden">
+        <div class="card">
+          <h3>All Appointments</h3>
+          <table id="adminApptTable">
+            <thead><tr><th>Patient</th><th>Doctor</th><th>Department</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- PATIENT ---------- -->
+    <div id="patientView" class="hidden">
+      <div class="stepper" id="patientStepper"></div>
+      <div class="tabs">
+        <button class="active" data-tab="profile" onclick="showPatientTab('profile')">👤 My Registration</button>
+        <button data-tab="symptom" onclick="showPatientTab('symptom')">🩺 Symptom Checker</button>
+        <button data-tab="book" onclick="showPatientTab('book')">📅 Book Appointment</button>
+        <button data-tab="myappts" onclick="showPatientTab('myappts')">🗂 My Appointments</button>
+      </div>
+
+      <div id="patientProfileTab">
+        <div class="card">
+          <h3>Patient Registration</h3>
+          <p class="muted">Fill your details once. Your doctor can see them to treat you better.</p>
+          <div id="profileBanner"></div>
+          <form id="profileForm">
+            <label>Registration Type</label>
+            <div class="type-grid">
+              <label class="type-card"><input type="radio" name="regType" value="New Patient" checked /><span>🆕<b>New Patient</b><small>First visit here</small></span></label>
+              <label class="type-card"><input type="radio" name="regType" value="Returning Patient" /><span>🔁<b>Returning Patient</b><small>Follow-up visit</small></span></label>
+              <label class="type-card"><input type="radio" name="regType" value="Emergency" /><span>🚑<b>Emergency</b><small>Urgent walk-in</small></span></label>
+            </div>
+            <div class="grid-3">
+              <div><label>Full Name *</label><input id="pfName" required /></div>
+              <div><label>Age *</label><input id="pfAge" type="number" min="0" max="120" required /></div>
+              <div><label>Gender *</label><select id="pfGender"><option>Male</option><option>Female</option><option>Other</option></select></div>
+              <div><label>Mobile Number *</label><input id="pfMobile" inputmode="numeric" maxlength="10" placeholder="10-digit number" required /></div>
+              <div><label>Emergency Contact</label><input id="pfEmergency" inputmode="numeric" maxlength="10" placeholder="Family member's number" /></div>
+              <div><label>Blood Group</label><select id="pfBlood"><option value="">Don't know</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+            </div>
+            <div class="grid-2">
+              <div><label>Address *</label><input id="pfAddress" required /></div>
+              <div><label>City *</label><input id="pfCity" value="Indore" required /></div>
+            </div>
+            <label>Bimari / Main problem — kis problem ke liye aaye hain?</label>
+            <textarea id="pfComplaint" placeholder="e.g. 2 din se bukhar aur sar dard hai"></textarea>
+            <div class="grid-2">
+              <div><label>Known allergies (optional)</label><input id="pfAllergies" /></div>
+              <div><label>Existing conditions / ongoing medicines (optional)</label><input id="pfConditions" /></div>
+            </div>
+            <button class="btn" type="submit">Save &amp; Continue to Symptom Checker →</button>
+            <div id="profileMsg"></div>
+          </form>
+        </div>
+      </div>
+
+      <div id="patientSymptomTab" class="hidden">
+        <div class="card">
+          <div class="alert">🚑 Emergency? Call <b>112</b> or ambulance <b>108</b> immediately — do not wait for this tool.</div>
+          <h3>Symptom Checker</h3>
+          <p class="muted">Select what you feel and for how many days. The system calculates severity automatically. Guidance only — not a diagnosis.</p>
+          <div id="symBimari"></div>
+          <div class="symptom-input-row">
+            <strong class="symptom-title">Your symptoms</strong>
+            <div class="symptom-example-row">
+              <span class="symptom-example">For ex. Headache, Fever</span>
+              <button type="button" class="add-symptom-btn" onclick="toggleSymptomInput()" title="Add symptom" aria-label="Add symptom">+</button>
+            </div>
+          </div>
+          <div id="symptomAddBox" class="symptom-add-box" style="display:none">
+            <input id="customSymptom" type="text" list="symptomOptions" placeholder="Search and select a symptom..." autocomplete="off" />
+            <datalist id="symptomOptions"></datalist>
+            <button type="button" class="btn small" onclick="addSymptom()">Add</button>
+          </div>
+          <div id="selectedSymptoms" class="selected-symptoms"></div>
+          <label>Since how many days?</label>
+          <div class="dur-row">
+            <input type="number" id="symDuration" min="0" max="365" value="1" />
+            <div class="presets">
+              <button type="button" onclick="setDays(1)">Today</button><button type="button" onclick="setDays(2)">2 days</button>
+              <button type="button" onclick="setDays(3)">3 days</button><button type="button" onclick="setDays(5)">5 days</button>
+              <button type="button" onclick="setDays(7)">1 week+</button>
+            </div>
+          </div>
+          <label>Anything else? (optional)</label><textarea id="symNotes" placeholder="Anything else you want to mention..."></textarea>
+          <button class="btn" onclick="runAssessment()">Get Assessment</button>
+          <div id="symMsg"></div>
+        </div>
+        <div id="symResult"></div>
+        <div class="card"><h3>My Past Assessments</h3>
+          <table id="symHistory"><thead><tr><th>Date</th><th>Symptoms</th><th>Risk</th><th>Report</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div id="patientBookTab" class="hidden">
+        <div class="card"><h3>Step 1: Choose Department</h3><div id="autoDeptBanner"></div><select id="bookDeptSelect"></select></div>
+        <div class="card"><h3>Step 2: Choose Doctor</h3><div id="doctorList" class="muted">Select a department first.</div></div>
+        <div class="card"><h3>Step 3: Choose Date &amp; Time</h3><label>Date</label><input type="date" id="bookDate" />
+          <div id="slotContainer" class="muted">Select a doctor and date first.</div></div>
+        <div class="card"><h3>Step 4: Reason for Visit</h3>
+          <textarea id="bookReason" placeholder="Briefly describe your symptoms/reason..."></textarea>
+          <button class="btn" onclick="bookAppointment()">Confirm Booking</button><div id="bookMsg"></div></div>
+      </div>
+
+      <div id="patientApptsTab" class="hidden">
+        <div class="card"><h3>My Appointments</h3>
+          <table id="patientApptTable"><thead><tr><th>Doctor</th><th>Department</th><th>Date</th><th>Time</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+        <div id="prescriptionArea"></div>
+      </div>
+    </div>
+
+    <!-- ---------- DOCTOR ---------- -->
+    <div id="doctorView" class="hidden">
+      <div class="tabs" id="doctorTabs">
+        <button class="active" data-tab="appts" onclick="showDoctorTab('appts')">📋 Appointments</button>
+        <button data-tab="patients" onclick="showDoctorTab('patients')">👥 My Patients</button>
+      </div>
+      <div id="doctorApptsTab">
+        <div class="card"><h3>My Appointments</h3>
+          <table id="doctorApptTable"><thead><tr><th>Patient</th><th>Age/Gender</th><th>Contact</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+        <div id="rxFormArea"></div>
+      </div>
+      <div id="doctorPatientsTab" class="hidden">
+        <div class="card"><h3>My Patients</h3><p class="muted">Everyone who has booked with you. Open a patient to see the stored history.</p>
+          <table id="doctorPatientsTable"><thead><tr><th>Patient</th><th>Age/Gender</th><th>Mobile</th><th>Visits</th><th>Last visit</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div id="historyArea"></div>
+    </div>
+
+  </div>
+</div>
+<script src="app.js"></script>
+<script src="symptom.js"></script>
+<script src="extras.js"></script>
+</body></html>
